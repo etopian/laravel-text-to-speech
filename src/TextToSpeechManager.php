@@ -2,12 +2,15 @@
 
 namespace Cion\TextToSpeech;
 
+
 use Aws\Credentials\Credentials;
 use Aws\Polly\PollyClient;
+use Cion\TextToSpeech\Converters\GoogleConvertor;
 use Cion\TextToSpeech\Converters\NullConverter;
 use Cion\TextToSpeech\Converters\PollyConverter;
 use Exception;
 use Illuminate\Support\Manager;
+use Google\Cloud\TextToSpeech\V1\TextToSpeechClient;
 
 class TextToSpeechManager extends Manager
 {
@@ -33,11 +36,26 @@ class TextToSpeechManager extends Manager
 
         $config = $this->config['tts.services.polly'];
 
-        $credentials = $this->getCredentials($config['credentials']);
+        $credentials = $this->getAwsCredentials($config['credentials']);
 
         $client = $this->setPollyClient($config, $credentials);
 
         return new PollyConverter(
+            $client
+        );
+    }
+
+    public function createGoogleDriver()
+    {
+        $this->ensureGoogleSdkIsInstalled();
+
+        $config = $this->config['tts.services.google'];
+
+        $credentials = $config['credentials'];
+
+        $client = $this->setGoogleClient($credentials);
+
+        return new GoogleConvertor(
             $client
         );
     }
@@ -58,13 +76,20 @@ class TextToSpeechManager extends Manager
         ]);
     }
 
+    protected function setGoogleClient( array $credentials)
+    {
+        return new TextToSpeechClient([
+            'credentials' => $credentials,
+        ]);
+    }
+
     /**
      * Get credentials of AWS.
      *
      * @param  array  $credentials
      * @return \Aws\Credentials\Credentials
      */
-    protected function getCredentials(array $credentials)
+    protected function getAwsCredentials(array $credentials)
     {
         return new Credentials($credentials['key'], $credentials['secret'], $credentials['token']);
     }
@@ -91,6 +116,15 @@ class TextToSpeechManager extends Manager
         if (! class_exists(PollyClient::class)) {
             throw new Exception(
                 'Please install the AWS SDK PHP using `composer require aws/aws-sdk-php`.'
+            );
+        }
+    }
+
+    protected function ensureGoogleSdkIsInstalled()
+    {
+        if (! class_exists(TextToSpeechClient::class)) {
+            throw new Exception(
+                'Please install the Google Cloud TextToSpeech SDK using `composer require google/cloud-translate`.'
             );
         }
     }
