@@ -103,5 +103,10 @@ return [
             'version' => 'latest',
         ],
     ],
+    'google' => [
+        // JSON encoded credentials as a single string in .env
+        // ex: GOOGLE_TTS_API_KEY='{ "type": "service_account",  "project_id": "cloud-voice-XXXX",  "private_key_id": "XXXX" ,  "universe_domain": "googleapis.com"}'
+        'credentials' => json_decode(env('GOOGLE_TTS_API_KEY', ''), true)
+    ],
 
 ];
